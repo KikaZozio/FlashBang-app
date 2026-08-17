@@ -1,0 +1,26 @@
+# Donnees personnelles : jamais sur GitHub (flashcards, images, sauvegarde)
+data/
+
+# Environnements Python
+venv/
+venv_linux/
+venv_macos/
+
+# Constructions (regenerees a chaque fois par les scripts de build)
+build/
+dist/
+dmg_source/
+AppDir/
+*.spec
+installer_output/
+installateur_linux/
+installateur_macos/
+appimagetool-*.AppImage
+icone.iconset/
+icone_FlashBang.icns
+
+# Police d'emoji embarquee (Linux) : re-telechargee automatiquement au build
+src/assets/fonts/
+
+__pycache__/
+*.pyc

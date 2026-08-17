@@ -1,0 +1,129 @@
+name: Construire et publier une nouvelle version
+
+# Se declenche automatiquement quand tu pousses un tag "vX.Y.Z" (ex. :
+#   git tag v1.1.0
+#   git push origin v1.1.0
+# ) : construit les 3 installateurs (Windows/macOS/Linux) en parallele sur
+# les machines gratuites fournies par GitHub, PUIS les publie automatiquement
+# dans une "Release" GitHub - c'est cette Release que l'app va detecter
+# elle-meme au demarrage (voir src/mises_a_jour.py).
+#
+# "workflow_dispatch" permet aussi de lancer une construction de test a la
+# main depuis l'onglet "Actions" du depot (bouton "Run workflow"), sans tag -
+# dans ce cas les 3 installateurs sont construits mais RIEN n'est publie (la
+# publication est reservee aux vrais tags de version, voir le job "publier").
+on:
+  push:
+    tags: [ "v*" ]
+  workflow_dispatch:
+
+jobs:
+  # --------------------------------------------------------------------
+  # Windows : exe + installateur Inno Setup
+  # --------------------------------------------------------------------
+  construire-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Construire l'installateur (build_installateur.bat)
+        shell: cmd
+        run: build_installateur.bat
+        env:
+          # CI est deja definie automatiquement par GitHub Actions sur tous
+          # ses runners - le script s'en sert pour sauter tous les "pause"
+          # (qui bloqueraient indefiniment une execution automatisee)
+
+      - name: Publier le resultat
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlashBang-Windows
+          path: installer_output/FlashBang_Installateur.exe
+
+  # --------------------------------------------------------------------
+  # macOS : app + .dmg
+  # --------------------------------------------------------------------
+  construire-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Construire le .dmg (build_dmg.sh)
+        run: bash build_dmg.sh
+
+      - name: Publier le resultat
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlashBang-macOS
+          path: installateur_macos/FlashBang.dmg
+
+  # --------------------------------------------------------------------
+  # Linux : AppImage
+  # --------------------------------------------------------------------
+  construire-linux:
+    # version epinglee (pas "ubuntu-latest") : QtWebEngine a besoin de
+    # bibliotheques systeme (libnss3, libasound2...) dont le nom de paquet
+    # change entre versions d'Ubuntu (ex. libasound2 vs libasound2t64) -
+    # epingler evite qu'une future mise a jour du runner "ubuntu-latest"
+    # casse silencieusement cette etape.
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Recuperer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer les dependances systeme (QtWebEngine + FUSE pour appimagetool)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libfuse2 libnss3 libasound2 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libxkbcommon0
+
+      - name: Construire l'AppImage (build_appimage.sh)
+        run: bash build_appimage.sh
+
+      - name: Publier le resultat
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlashBang-Linux
+          path: installateur_linux/FlashBang-x86_64.AppImage
+
+  # --------------------------------------------------------------------
+  # Publication : uniquement si ce workflow a ete declenche par un vrai tag
+  # de version (pas par un lancement manuel de test)
+  # --------------------------------------------------------------------
+  publier:
+    needs: [construire-windows, construire-macos, construire-linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperer les 3 installateurs construits ci-dessus
+        uses: actions/download-artifact@v4
+        with:
+          path: artefacts
+
+      - name: Publier la Release GitHub avec les 3 fichiers attaches
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            artefacts/FlashBang-Windows/FlashBang_Installateur.exe
+            artefacts/FlashBang-macOS/FlashBang.dmg
+            artefacts/FlashBang-Linux/FlashBang-x86_64.AppImage
