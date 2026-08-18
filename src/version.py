@@ -15,4 +15,4 @@ Format libre mais recommande : MAJEUR.MINEUR.CORRECTIF (ex. "1.2.0"), suivi
 du versionnage semantique habituel.
 """
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
