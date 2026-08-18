@@ -59,11 +59,14 @@ Une fois la construction terminée, la page `https://github.com/KikaZozio/FlashB
 Une fois qu'un ami a l'app installée :
 
 - À chaque lancement, l'app vérifie discrètement en ligne s'il existe une version plus récente que la sienne.
-- Si oui, **une fenêtre lui demande confirmation** ("Une nouvelle version est disponible... Veux-tu ouvrir la page de téléchargement ?") — rien ne se télécharge ni ne s'installe sans qu'il clique sur "Oui".
-- S'il clique "Oui", son navigateur s'ouvre sur la page de téléchargement du bon fichier ; il l'installe lui-même, comme la première fois.
+- Si oui, **une fenêtre lui demande confirmation** ("Une nouvelle version est disponible... Veux-tu la télécharger et l'installer maintenant ?") — rien ne se télécharge ni ne s'installe sans qu'il clique sur "Oui".
+- S'il clique "Oui", le fichier se télécharge (avec une barre de progression), puis :
+  - **Windows** : l'installateur se lance tout seul, Flash Bang se ferme pour le laisser faire.
+  - **macOS** : le `.dmg` s'ouvre dans le Finder — il glisse l'app dans Applications comme la première fois (une vraie automatisation complète nécessiterait une signature Apple payante).
+  - **Linux (AppImage)** : le fichier est remplacé automatiquement et l'app redémarre toute seule dans la nouvelle version.
 - Il peut aussi vérifier à tout moment depuis **Paramètres → 🔄 Vérifier les mises à jour**, sans attendre le prochain lancement.
 
-Rien n'est automatique au point de s'installer tout seul en arrière-plan — c'est fait exprès, pour que personne n'ait de surprise.
+Rien ne se déclenche en arrière-plan sans cette confirmation explicite — c'est fait exprès, pour que personne n'ait de surprise.
 
 ## Pour publier une prochaine mise à jour (une fois que tout ça est en place)
 

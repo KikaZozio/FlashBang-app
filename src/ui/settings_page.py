@@ -7,13 +7,14 @@ from PyQt6.QtCore import Qt, QUrl
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QPushButton,
-    QLineEdit, QRadioButton, QButtonGroup, QMessageBox, QScrollArea
+    QLineEdit, QRadioButton, QButtonGroup, QMessageBox, QScrollArea, QProgressDialog,
+    QApplication
 )
 
 import lists
 from ui import styles
 from version import VERSION
-from mises_a_jour import VerificationMiseAJour
+from mises_a_jour import VerificationMiseAJour, TelechargementMiseAJour, installer_mise_a_jour_telechargee
 
 LIBELLES_COMPORTEMENT = {
     "zero": (
@@ -230,20 +231,66 @@ class SettingsPage(QWidget):
             f"Nouvelle version disponible : {info.get('version')} "
             f"(tu as la {VERSION}). Clique sur « Télécharger la mise à jour »."
         )
-        if silencieux:
-            reponse = QMessageBox.question(
-                self, "Mise à jour disponible",
-                f"Une nouvelle version de Flash Bang est disponible : "
-                f"{info.get('version')} (tu as la {VERSION}).\n\n"
-                f"Veux-tu ouvrir la page de téléchargement ?",
+
+        # dans les 2 cas (verification silencieuse au demarrage OU bouton
+        # manuel), rien ne se telecharge/s'installe sans une confirmation
+        # explicite - c'est cette question qui sert de "consentement"
+        reponse = QMessageBox.question(
+            self, "Mise à jour disponible",
+            f"Une nouvelle version de Flash Bang est disponible : "
+            f"{info.get('version')} (tu as la {VERSION}).\n\n"
+            f"Veux-tu la télécharger et l'installer maintenant ?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+        )
+        if reponse == QMessageBox.StandardButton.Yes:
+            self._telecharger_maj()
+
+    def _telecharger_maj(self):
+        if not self._url_telechargement_maj:
+            return
+
+        self._boite_progression_maj = QProgressDialog(
+            "Téléchargement de la mise à jour…", "Annuler", 0, 100, self
+        )
+        self._boite_progression_maj.setWindowTitle("Mise à jour")
+        self._boite_progression_maj.setWindowModality(Qt.WindowModality.WindowModal)
+        self._boite_progression_maj.setMinimumDuration(0)
+        self._boite_progression_maj.setValue(0)
+
+        self._telechargeur_maj = TelechargementMiseAJour(self._url_telechargement_maj)
+        self._telechargeur_maj.progression.connect(self._sur_progression_telechargement_maj)
+        self._telechargeur_maj.termine.connect(self._sur_telechargement_maj_termine)
+        self._boite_progression_maj.canceled.connect(self._telechargeur_maj.terminate)
+        self._telechargeur_maj.start()
+
+    def _sur_progression_telechargement_maj(self, pourcentage):
+        if pourcentage < 0:
+            # taille inconnue (en-tete manquant) : indicateur "en cours",
+            # pas de vrai pourcentage
+            self._boite_progression_maj.setRange(0, 0)
+        else:
+            self._boite_progression_maj.setRange(0, 100)
+            self._boite_progression_maj.setValue(pourcentage)
+
+    def _sur_telechargement_maj_termine(self, info):
+        self._boite_progression_maj.close()
+
+        if "erreur" in info:
+            reponse = QMessageBox.warning(
+                self, "Échec du téléchargement",
+                f"Le téléchargement automatique a échoué ({info['erreur']}).\n\n"
+                f"Veux-tu essayer d'ouvrir la page de téléchargement dans le "
+                f"navigateur à la place ?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
             if reponse == QMessageBox.StandardButton.Yes:
-                self._telecharger_maj()
+                QDesktopServices.openUrl(QUrl(self._url_telechargement_maj))
+            return
 
-    def _telecharger_maj(self):
-        if self._url_telechargement_maj:
-            QDesktopServices.openUrl(QUrl(self._url_telechargement_maj))
+        message, doit_fermer_app = installer_mise_a_jour_telechargee(info["chemin"])
+        QMessageBox.information(self, "Mise à jour", message)
+        if doit_fermer_app:
+            QApplication.quit()
 
     def _reinitialiser_intervalles(self):
         self._champ_intervalles.setText(", ".join(str(v) for v in lists.INTERVALLES_PAR_DEFAUT))
