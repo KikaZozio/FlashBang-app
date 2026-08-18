@@ -152,8 +152,8 @@ if not defined ISCC (
     echo     telecharge^) depuis https://jrsoftware.org/isdl.php
     echo.
     echo  2^) Si tu sais ou "ISCC.exe" se trouve sur ton PC ^(cherche
-    echo     "ISCC.exe" dans l'explorateur Windows^), dis-le a Claude pour
-    echo     qu'il ajoute le bon chemin dans build_installateur.bat.
+    echo     "ISCC.exe" dans l'explorateur Windows^), ajoute son chemin
+    echo     dans la variable ISCC de build_installateur.bat.
     echo ================================================================
     if not defined CI pause
     exit /b 1
