@@ -35,13 +35,12 @@ jobs:
       - name: Installer Inno Setup
         run: choco install innosetup --no-progress -y
 
+      # CI est deja definie automatiquement par GitHub Actions sur tous ses
+      # runners - build_installateur.bat s'en sert pour sauter tous les
+      # "pause" (qui bloqueraient indefiniment une execution automatisee)
       - name: Construire l'installateur (build_installateur.bat)
         shell: cmd
         run: build_installateur.bat
-        env:
-          # CI est deja definie automatiquement par GitHub Actions sur tous
-          # ses runners - le script s'en sert pour sauter tous les "pause"
-          # (qui bloqueraient indefiniment une execution automatisee)
 
       - name: Publier le resultat
         uses: actions/upload-artifact@v4
@@ -113,6 +112,13 @@ jobs:
     needs: [construire-windows, construire-macos, construire-linux]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    # necessaire pour que ce job ait le droit de creer une Release : par
+    # defaut, un nouveau depot GitHub ne donne qu'un acces en LECTURE au
+    # jeton automatique des workflows (GITHUB_TOKEN) - sans cette ligne,
+    # l'etape "Publier la Release GitHub" ci-dessous echouerait avec une
+    # erreur 403 (permission refusee), meme si les 3 constructions reussissent
+    permissions:
+      contents: write
     steps:
       - name: Recuperer les 3 installateurs construits ci-dessus
         uses: actions/download-artifact@v4
