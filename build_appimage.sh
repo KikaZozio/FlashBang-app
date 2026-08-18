@@ -132,27 +132,32 @@ if [ ! -f "$APPIMAGETOOL" ]; then
     chmod +x "$APPIMAGETOOL"
 fi
 
+# Nom du fichier final : FlashBang_Linux_1.1.0.AppImage (meme numero de
+# version que src/version.py, source unique de verite)
+VERSION=$(python3 -c "import sys; sys.path.insert(0, 'src'); import version; print(version.VERSION)")
+NOM_APPIMAGE="FlashBang_Linux_${VERSION}.AppImage"
+
 mkdir -p installateur_linux
 # --appimage-extract-and-run : evite d'avoir besoin de FUSE installe sur la
 # machine qui construit l'app (certaines machines/serveurs ne l'ont pas) ;
 # l'AppImage produite, elle, n'a pas besoin de FUSE pour etre CONSTRUITE,
 # seulement potentiellement pour etre EXECUTEE plus tard (et la plupart des
 # distributions recentes savent s'en passer aussi, voir le message final).
-ARCH=x86_64 "$APPIMAGETOOL" --appimage-extract-and-run AppDir installateur_linux/FlashBang-x86_64.AppImage
+ARCH=x86_64 "$APPIMAGETOOL" --appimage-extract-and-run AppDir "installateur_linux/${NOM_APPIMAGE}"
 
 deactivate
 
 echo
-if [ -f installateur_linux/FlashBang-x86_64.AppImage ]; then
-    chmod +x installateur_linux/FlashBang-x86_64.AppImage
+if [ -f "installateur_linux/${NOM_APPIMAGE}" ]; then
+    chmod +x "installateur_linux/${NOM_APPIMAGE}"
     echo "==============================================="
     echo " Termine ! Ton AppImage est ici :"
-    echo " installateur_linux/FlashBang-x86_64.AppImage"
+    echo " installateur_linux/${NOM_APPIMAGE}"
     echo
     echo " Envoie ce SEUL fichier a tes amis sous Linux. Ils doivent juste le"
     echo " rendre executable (clic droit -> Proprietes -> Autorisations ->"
     echo " 'Autoriser l'execution du fichier comme un programme', ou en ligne"
-    echo " de commande : chmod +x FlashBang-x86_64.AppImage) puis double-cliquer"
+    echo " de commande : chmod +x ${NOM_APPIMAGE}) puis double-cliquer"
     echo " dessus. Rien a installer, pas besoin des droits admin."
     echo "==============================================="
 else

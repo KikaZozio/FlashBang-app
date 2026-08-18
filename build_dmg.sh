@@ -77,18 +77,22 @@ fi
 
 echo
 echo "[6/6] Fabrication du .dmg..."
+# Nom du fichier final : FlashBang_macOS_1.1.0.dmg (meme numero de version
+# que src/version.py, source unique de verite - voir aussi FlashBang.iss)
+VERSION=$(python3 -c "import sys; sys.path.insert(0, 'src'); import version; print(version.VERSION)")
+NOM_DMG="FlashBang_macOS_${VERSION}.dmg"
 mkdir -p dmg_source installateur_macos
 cp -r "dist/FlashBang.app" dmg_source/
 ln -s /Applications dmg_source/Applications
-hdiutil create -volname "Flash Bang" -srcfolder dmg_source -ov -format UDZO installateur_macos/FlashBang.dmg
+hdiutil create -volname "Flash Bang" -srcfolder dmg_source -ov -format UDZO "installateur_macos/${NOM_DMG}"
 
 deactivate
 
 echo
-if [ -f installateur_macos/FlashBang.dmg ]; then
+if [ -f "installateur_macos/${NOM_DMG}" ]; then
     echo "==============================================="
     echo " Termine ! Ton .dmg est ici :"
-    echo " installateur_macos/FlashBang.dmg"
+    echo " installateur_macos/${NOM_DMG}"
     echo
     echo " Envoie ce SEUL fichier a tes amis sous macOS. Ils double-cliquent"
     echo " dessus puis glissent FlashBang.app dans le dossier Applications."

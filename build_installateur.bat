@@ -169,10 +169,10 @@ if errorlevel 1 (
 )
 
 echo.
-if exist installer_output\FlashBang_Installateur.exe (
+if exist installer_output\FlashBang_Windows_%FLASHBANG_VERSION%.exe (
     echo ================================================================
     echo  Termine ! Ton installateur est ici :
-    echo  installer_output\FlashBang_Installateur.exe
+    echo  installer_output\FlashBang_Windows_%FLASHBANG_VERSION%.exe
     echo.
     echo  Envoie CE fichier a tes amis : ils double-cliquent dessus, suivent
     echo  l'assistant ^(Suivant, Suivant, Installer^), et Flash Bang se

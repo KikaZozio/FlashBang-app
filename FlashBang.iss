@@ -41,7 +41,9 @@ DefaultGroupName=Flash Bang
 DisableProgramGroupPage=yes
 PrivilegesRequired=lowest
 OutputDir=installer_output
-OutputBaseFilename=FlashBang_Installateur
+; Nom du fichier final : FlashBang_Windows_1.1.0.exe (meme numero de version
+; que src/version.py, voir le commentaire sur MyAppVersion plus haut)
+OutputBaseFilename=FlashBang_Windows_{#MyAppVersion}
 Compression=lzma2
 SolidCompression=yes
 UninstallDisplayIcon={app}\{#MyAppExeName}

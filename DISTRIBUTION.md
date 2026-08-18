@@ -2,10 +2,10 @@
 
 Quatre façons de partager l'app selon le système de tes amis :
 
-- **L'installateur Windows** (`FlashBang_Installateur.exe`) — recommandé sous Windows. Tes amis double-cliquent, suivent un assistant graphique classique (Suivant → Suivant → Installer), et récupèrent une icône dans le menu Démarrer et sur le Bureau, avec un vrai désinstalleur dans "Applications". Aucune invite de commande, jamais.
+- **L'installateur Windows** (`FlashBang_Windows_<version>.exe`) — recommandé sous Windows. Tes amis double-cliquent, suivent un assistant graphique classique (Suivant → Suivant → Installer), et récupèrent une icône dans le menu Démarrer et sur le Bureau, avec un vrai désinstalleur dans "Applications". Aucune invite de commande, jamais.
 - **L'exécutable Windows portable** (dossier `FlashBang\`) — plus simple à fabriquer pour toi (une seule étape), mais tes amis doivent décompresser un dossier et double-cliquer sur `FlashBang.exe` à chaque fois, sans raccourci ni désinstalleur propre.
-- **L'AppImage** (`FlashBang-x86_64.AppImage`) — pour tes amis sous Linux. Un seul fichier, fonctionne sur (quasiment) toutes les distributions sans rien installer ni droits admin.
-- **Le `.dmg`** (`FlashBang.dmg`) — pour tes amis sous macOS. Ils l'ouvrent et glissent `FlashBang.app` dans leur dossier Applications, comme n'importe quelle app Mac.
+- **L'AppImage** (`FlashBang_Linux_<version>.AppImage`) — pour tes amis sous Linux. Un seul fichier, fonctionne sur (quasiment) toutes les distributions sans rien installer ni droits admin.
+- **Le `.dmg`** (`FlashBang_macOS_<version>.dmg`) — pour tes amis sous macOS. Ils l'ouvrent et glissent `FlashBang.app` dans leur dossier Applications, comme n'importe quelle app Mac.
 
 ## Fabriquer l'installateur Windows (recommandé sous Windows)
 
@@ -14,7 +14,7 @@ Il faut construire **sur Windows** (ça ne peut pas se faire depuis ailleurs) :
 1. **Une seule fois**, installe Inno Setup (gratuit, ~5 Mo) : [jrsoftware.org/isdl.php](https://jrsoftware.org/isdl.php) — laisse toutes les options par défaut.
 2. Double-clique sur `build_installateur.bat`, à la racine du projet.
 3. Laisse-le installer les dépendances, construire l'app, puis fabriquer l'installateur — ça prend quelques minutes la première fois.
-4. Une fois terminé, ton installateur est dans `installer_output\FlashBang_Installateur.exe`.
+4. Une fois terminé, ton installateur est dans `installer_output\FlashBang_Windows_<version>.exe`.
 
 Si tu lances `build_installateur.bat` avant d'avoir installé Inno Setup, il te le signale simplement et te dit quoi faire — pas d'erreur cryptique.
 
@@ -30,11 +30,11 @@ Contrairement aux scripts Windows, celui-ci se construit **depuis Linux** (impos
 
 1. Ouvre un terminal à la racine du projet et lance : `bash build_appimage.sh`
 2. Laisse-le créer un environnement Python isolé (`venv_linux\`), installer les dépendances, construire l'app, puis télécharger `appimagetool` (une seule fois, ~10 Mo) et fabriquer l'AppImage — quelques minutes la première fois.
-3. Une fois terminé, ton AppImage est dans `installateur_linux/FlashBang-x86_64.AppImage`.
+3. Une fois terminé, ton AppImage est dans `installateur_linux/FlashBang_Linux_<version>.AppImage`.
 
 Ce script a besoin d'une connexion internet la première fois (pour télécharger `appimagetool`, mis en cache ensuite à côté du script) et de `python3`/`python3-venv` installés (`sudo apt install python3 python3-venv` sur Ubuntu/Debian si besoin).
 
-Tes amis sous Linux reçoivent ce **seul fichier** (`FlashBang-x86_64.AppImage`) : ils doivent juste le rendre exécutable une fois — clic droit → Propriétés → Autorisations → "Autoriser l'exécution du fichier comme un programme" (ou en terminal : `chmod +x FlashBang-x86_64.AppImage`) — puis double-cliquer dessus. Aucune installation, aucun droit admin.
+Tes amis sous Linux reçoivent ce **seul fichier** (`FlashBang_Linux_<version>.AppImage`) : ils doivent juste le rendre exécutable une fois — clic droit → Propriétés → Autorisations → "Autoriser l'exécution du fichier comme un programme" (ou en terminal : `chmod +x FlashBang_Linux_<version>.AppImage`) — puis double-cliquer dessus. Aucune installation, aucun droit admin.
 
 **Si les emojis des boutons s'affichent comme des cases vides** : la distribution n'a pas de police d'emoji installée (courant sur WSL et les installations minimales, plus rare sur un Ubuntu/Fedora de bureau classique). Ton ami peut corriger ça avec : `sudo apt install fonts-noto-color-emoji` (Ubuntu/Debian) puis `fc-cache -f`, avant de relancer l'AppImage.
 
@@ -45,13 +45,13 @@ Un vrai Mac est nécessaire pour construire une app macOS (impossible depuis Win
 1. Copie tout le dossier du projet sur le Mac (clé USB, drive partagé...) — **sauf le dossier `data\`** si tu ne veux pas y transférer tes flashcards personnelles.
 2. Ouvre le Terminal (Cmd+Espace, tape "Terminal"), va dans le dossier du projet (`cd chemin/vers/App_Flashcards`), et lance : `bash build_dmg.sh`
 3. Laisse-le créer un environnement Python isolé, installer les dépendances, fabriquer l'icône puis l'app et le `.dmg` — quelques minutes la première fois.
-4. Une fois terminé, ton fichier est dans `installateur_macos/FlashBang.dmg`.
+4. Une fois terminé, ton fichier est dans `installateur_macos/FlashBang_macOS_<version>.dmg`.
 
 Ce script a besoin de `python3` installé (depuis [python.org](https://python.org) ou via Homebrew : `brew install python3` si besoin).
 
 Ce `.dmg` n'est pas signé numériquement (une signature Apple coûte 99$/an, pas nécessaire entre amis) : au premier lancement, macOS affichera un avertissement ("app non identifiée" ou "app endommagée"). Ton ami doit faire un clic droit sur `FlashBang.app` → "Ouvrir" → confirmer "Ouvrir quand même" (au lieu d'un double-clic classique), une seule fois. Si ça ne suffit pas (macOS récent), il peut aussi passer par Réglages Système → Confidentialité et sécurité, où un bouton "Ouvrir quand même" apparaît après la première tentative.
 
-*(Un dépôt GitHub avec construction automatique dans le cloud est aussi possible — voir `.github/workflows/build-macos.yml` — mais inutile si tu as un accès direct à un Mac.)*
+*(Un dépôt GitHub avec construction automatique dans le cloud est aussi possible — voir `.github/workflows/release.yml` — mais inutile si tu as un accès direct à un Mac.)*
 
 ## Partager le fichier
 
