@@ -85,6 +85,10 @@ echo "[6/7] Signature ad-hoc de l'app..."
 # les 99$/an de notarisation - elle ne supprime pas l'avertissement Gatekeeper
 # ("app non identifiee", voir plus bas), mais elle rend l'app stable au lancement.
 codesign --force --deep --sign - "dist/FlashBang.app"
+# laisse le temps aux processus systeme de securite (verification de la
+# signature en arriere-plan) de se calmer avant de manipuler le bundle -
+# reduit le risque du "Resource busy" ci-dessous des le premier essai
+sleep 3
 
 echo
 echo "[7/7] Fabrication du .dmg..."
@@ -95,7 +99,22 @@ NOM_DMG="FlashBang_macOS_${VERSION}.dmg"
 mkdir -p dmg_source installateur_macos
 cp -r "dist/FlashBang.app" dmg_source/
 ln -s /Applications dmg_source/Applications
-hdiutil create -volname "Flash Bang" -srcfolder dmg_source -ov -format UDZO "installateur_macos/${NOM_DMG}"
+
+# hdiutil peut echouer avec "Resource busy" juste apres une signature de
+# code : un processus systeme (diskimages-helper) reste parfois actif une
+# fraction de seconde sur la ressource - pas lie a notre code, une simple
+# "race condition" cote macOS, connue sur les runners CI. On laisse un court
+# delai puis on reessaie plusieurs fois avant d'abandonner pour de bon.
+TENTATIVES_DMG=0
+until hdiutil create -volname "Flash Bang" -srcfolder dmg_source -ov -format UDZO "installateur_macos/${NOM_DMG}"; do
+    TENTATIVES_DMG=$((TENTATIVES_DMG + 1))
+    if [ "$TENTATIVES_DMG" -ge 5 ]; then
+        echo "[ERREUR] hdiutil echoue de facon persistante (pas juste une resource busy passagere)."
+        exit 1
+    fi
+    echo "  (hdiutil occupe, nouvel essai dans 5 secondes...)"
+    sleep 5
+done
 
 deactivate
 
