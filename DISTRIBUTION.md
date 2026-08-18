@@ -47,9 +47,9 @@ Un vrai Mac est nécessaire pour construire une app macOS (impossible depuis Win
 3. Laisse-le créer un environnement Python isolé, installer les dépendances, fabriquer l'icône puis l'app et le `.dmg` — quelques minutes la première fois.
 4. Une fois terminé, ton fichier est dans `installateur_macos/FlashBang_macOS_<version>.dmg`.
 
-Ce script a besoin de `python3` installé (depuis [python.org](https://python.org) ou via Homebrew : `brew install python3` si besoin).
+Ce script a besoin de `python3` installé (depuis [python.org](https://python.org) ou via Homebrew : `brew install python3` si besoin), ainsi que des outils en ligne de commande Xcode (pour `codesign` — déjà présents sur la plupart des Mac ; sinon macOS propose de les installer automatiquement au premier lancement du script).
 
-Ce `.dmg` n'est pas signé numériquement (une signature Apple coûte 99$/an, pas nécessaire entre amis) : au premier lancement, macOS affichera un avertissement ("app non identifiée" ou "app endommagée"). Ton ami doit faire un clic droit sur `FlashBang.app` → "Ouvrir" → confirmer "Ouvrir quand même" (au lieu d'un double-clic classique), une seule fois. Si ça ne suffit pas (macOS récent), il peut aussi passer par Réglages Système → Confidentialité et sécurité, où un bouton "Ouvrir quand même" apparaît après la première tentative.
+L'app est signée "ad-hoc" (gratuit, sans compte développeur Apple) — ça évite un plantage connu au démarrage sur certains Mac, mais ce n'est pas une vraie signature Apple notariée (ça coûte 99$/an, pas nécessaire entre amis). Au premier lancement, macOS affichera donc quand même un avertissement ("app non identifiée"). Ton ami doit faire un clic droit sur `FlashBang.app` → "Ouvrir" → confirmer "Ouvrir quand même" (au lieu d'un double-clic classique), une seule fois. Si ça ne suffit pas (macOS récent), il peut aussi passer par Réglages Système → Confidentialité et sécurité, où un bouton "Ouvrir quand même" apparaît après la première tentative.
 
 *(Un dépôt GitHub avec construction automatique dans le cloud est aussi possible — voir `.github/workflows/release.yml` — mais inutile si tu as un accès direct à un Mac.)*
 

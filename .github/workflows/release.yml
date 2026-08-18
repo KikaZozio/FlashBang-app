@@ -55,7 +55,15 @@ jobs:
   # macOS : app + .dmg
   # --------------------------------------------------------------------
   construire-macos:
-    runs-on: macos-latest
+    # "macos-latest" pointe vers une machine Apple Silicon (arm64) depuis
+    # 2024 : un .app construit dessus ne demarre pas du tout sur un Mac Intel
+    # (plantage immediat, sans message clair - c'est le bug remonte). On
+    # epingle donc "macos-13", la derniere image Intel (x86_64) encore
+    # disponible chez GitHub : un .app x86_64 tourne nativement sur les Mac
+    # Intel ET sur les Mac Apple Silicon via Rosetta 2 (transparent, deja
+    # installe sur la plupart des Mac recents, ou propose en un clic sinon)
+    # - ca couvre donc tous les Mac, dans les deux sens.
+    runs-on: macos-13
     steps:
       - name: Recuperer le code
         uses: actions/checkout@v4
