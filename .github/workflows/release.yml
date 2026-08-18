@@ -57,13 +57,16 @@ jobs:
   construire-macos:
     # "macos-latest" pointe vers une machine Apple Silicon (arm64) depuis
     # 2024 : un .app construit dessus ne demarre pas du tout sur un Mac Intel
-    # (plantage immediat, sans message clair - c'est le bug remonte). On
-    # epingle donc "macos-13", la derniere image Intel (x86_64) encore
-    # disponible chez GitHub : un .app x86_64 tourne nativement sur les Mac
-    # Intel ET sur les Mac Apple Silicon via Rosetta 2 (transparent, deja
-    # installe sur la plupart des Mac recents, ou propose en un clic sinon)
-    # - ca couvre donc tous les Mac, dans les deux sens.
-    runs-on: macos-13
+    # (plantage immediat, sans message clair - c'est le bug remonte). On veut
+    # donc une machine Intel (x86_64) : un .app x86_64 tourne nativement sur
+    # les Mac Intel ET sur les Mac Apple Silicon via Rosetta 2 (transparent,
+    # deja installe sur la plupart des Mac recents, ou propose en un clic
+    # sinon) - ca couvre donc tous les Mac, dans les deux sens.
+    # ATTENTION : "macos-13" (utilise avant) a ete completement retire par
+    # GitHub fin 2025 - un job qui le cible reste bloque indefiniment sur
+    # "Waiting for a runner to pick up this job" (c'est le bug remonte).
+    # "macos-15-intel" est le nouveau label Intel recommande par GitHub.
+    runs-on: macos-15-intel
     steps:
       - name: Recuperer le code
         uses: actions/checkout@v4
