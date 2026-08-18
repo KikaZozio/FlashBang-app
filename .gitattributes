@@ -1,10 +1,2 @@
 # Auto detect text files and perform LF normalization
 * text=auto
-
-# Les scripts shell (macOS/Linux) doivent TOUJOURS garder des fins de ligne
-# Unix (LF), meme si commites/reconstruits depuis Windows - sinon bash les
-# refuse avec "syntax error: unexpected end of file" (deja arrive une fois).
-*.sh text eol=lf
-
-# A l'inverse, les scripts .bat sont pour Windows et attendent des CRLF.
-*.bat text eol=crlf

@@ -24,7 +24,7 @@ if pgrep -f "dist/FlashBang.app/Contents/MacOS/FlashBang" >/dev/null 2>&1; then
     exit 1
 fi
 
-echo "[1/7] Preparation de l'environnement Python (venv_macos)..."
+echo "[1/6] Preparation de l'environnement Python (venv_macos)..."
 # un venv isole evite les erreurs "externally-managed-environment" que pip
 # peut renvoyer sur les installations Python recentes.
 if [ ! -d venv_macos ]; then
@@ -34,16 +34,16 @@ fi
 source venv_macos/bin/activate
 
 echo
-echo "[2/7] Installation des dependances..."
+echo "[2/6] Installation des dependances..."
 pip install --upgrade pip -q
 pip install -r requirements.txt pyinstaller -q
 
 echo
-echo "[3/7] Nettoyage des anciennes constructions..."
+echo "[3/6] Nettoyage des anciennes constructions..."
 rm -rf build dist FlashBang.spec dmg_source installateur_macos icone.iconset icone_FlashBang.icns
 
 echo
-echo "[4/7] Fabrication de l'icone macOS (.icns) a partir de icone_FlashBang.png..."
+echo "[4/6] Fabrication de l'icone macOS (.icns) a partir de icone_FlashBang.png..."
 mkdir -p icone.iconset
 sips -z 16 16     icone_FlashBang.png --out icone.iconset/icon_16x16.png     >/dev/null
 sips -z 32 32     icone_FlashBang.png --out icone.iconset/icon_16x16@2x.png >/dev/null
@@ -58,7 +58,7 @@ sips -z 1024 1024 icone_FlashBang.png --out icone.iconset/icon_512x512@2x.png >/
 iconutil -c icns icone.iconset -o icone_FlashBang.icns
 
 echo
-echo "[5/7] Construction de l'app (patiente, ca peut prendre quelques minutes)..."
+echo "[5/6] Construction de l'app (patiente, ca peut prendre quelques minutes)..."
 # Pas de --onedir/--onefile ici : --windowed sur macOS produit directement un
 # vrai bundle .app (equivalent macOS du --onedir Windows/Linux : demarre
 # directement, pas de re-extraction a chaque lancement).
@@ -76,18 +76,7 @@ if [ ! -d "dist/FlashBang.app" ]; then
 fi
 
 echo
-echo "[6/7] Signature ad-hoc de l'app..."
-# Sans AUCUNE signature de code, l'app plante au demarrage sur certains Mac
-# (crash observe : segfault dans l'initialisation interne de Qt, au moment
-# ou elle verifie la signature du bundle - CFCheckCFInfoPACSignature /
-# QLibraryInfoPrivate::paths). Une signature "ad-hoc" (l'option "-" ci-dessous)
-# resout ce plantage : GRATUITE, ne necessite ni compte developpeur Apple ni
-# les 99$/an de notarisation - elle ne supprime pas l'avertissement Gatekeeper
-# ("app non identifiee", voir plus bas), mais elle rend l'app stable au lancement.
-codesign --force --deep --sign - "dist/FlashBang.app"
-
-echo
-echo "[7/7] Fabrication du .dmg..."
+echo "[6/6] Fabrication du .dmg..."
 # Nom du fichier final : FlashBang_macOS_1.1.0.dmg (meme numero de version
 # que src/version.py, source unique de verite - voir aussi FlashBang.iss)
 VERSION=$(python3 -c "import sys; sys.path.insert(0, 'src'); import version; print(version.VERSION)")
@@ -109,8 +98,8 @@ if [ -f "installateur_macos/${NOM_DMG}" ]; then
     echo " dessus puis glissent FlashBang.app dans le dossier Applications."
     echo
     echo " Au premier lancement, macOS affichera un avertissement ('app non"
-    echo " identifiee') car l'app est signee ad-hoc mais pas notariee par Apple"
-    echo " (notarisation payante, pas necessaire entre amis). Il faut alors :"
+    echo " identifiee' ou 'endommagee') car l'app n'est pas signee numeriquement"
+    echo " (signature Apple payante, pas necessaire entre amis). Il faut alors :"
     echo " clic droit sur FlashBang.app -> Ouvrir -> confirmer 'Ouvrir quand"
     echo " meme' (au lieu d'un double-clic classique), une seule fois."
     echo "==============================================="
