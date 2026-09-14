@@ -337,40 +337,85 @@ def _cles_parentes(cle_portee):
 def reglages_effectifs_pour_portee(cle_portee):
     """Reglages qui s'appliqueraient a cette portee si ELLE-MEME n'avait pas
     de personnalisation (= ce qu'elle herite du niveau au-dessus). Sert a
-    pre-remplir le dialogue d'edition avant toute personnalisation."""
+    pre-remplir le dialogue d'edition avant toute personnalisation. Renvoie
+    (intervalles, comportement_echec, desactive)."""
     for cle in _cles_parentes(cle_portee):
         reglage = reglages_par_portee.get(cle)
         if reglage:
-            return list(reglage["intervalles"]), reglage["comportement_echec"]
-    return list(spaced_repetition), comportement_echec
+            if reglage.get("desactive"):
+                return list(spaced_repetition), comportement_echec, True
+            return list(reglage["intervalles"]), reglage["comportement_echec"], False
+    return list(spaced_repetition), comportement_echec, False
 
-def _reglages_effectifs_pour(flashcard_id):
-    """(intervalles, comportement_echec) a utiliser pour CETTE carte precise,
-    en cherchant un reglage personnalise du plus specifique au plus general :
-    sous-sous-dossier > sous-dossier > matiere > dossier > global."""
+def _reglage_dict_effectif(cle_depart):
+    """Dict de reglage BRUT (tel que stocke, avec sa cle "desactive"
+    eventuelle) le plus specifique qui s'applique a cette portee - elle-meme
+    ou l'un de ses parents. None si rien n'est personnalise nulle part."""
+    reglage = reglages_par_portee.get(cle_depart)
+    if reglage:
+        return reglage
+    for cle in _cles_parentes(cle_depart):
+        reglage = reglages_par_portee.get(cle)
+        if reglage:
+            return reglage
+    return None
+
+def _cle_portee_de_flashcard(flashcard_id):
+    """Cle de portee (sous-dossier ou matiere) d'ou demarrer la recherche du
+    reglage effectif d'une flashcard precise. None si la carte n'appartient a
+    aucune matiere connue (donnee incoherente)."""
     subject_name = _matiere_de_flashcard(flashcard_id)
     if subject_name is None:
-        return list(spaced_repetition), comportement_echec
-
+        return None
     chemin = _sous_dossier_de(flashcard_id)
-    cle_depart = (
+    return (
         cle_portee_sousdossier(subject_name, chemin) if chemin
         else cle_portee_matiere(subject_name)
     )
 
-    reglage = reglages_par_portee.get(cle_depart)
-    if reglage:
+def _reglages_effectifs_pour(flashcard_id):
+    """(intervalles, comportement_echec) a utiliser pour CETTE carte precise,
+    en cherchant un reglage personnalise du plus specifique au plus general :
+    sous-sous-dossier > sous-dossier > matiere > dossier > global. Si la
+    portee effective est desactivee, renvoie quand meme des valeurs globales
+    par defaut (sans consequence : voir _portee_desactivee/est_a_reviser, qui
+    empechent de toute facon la carte d'etre jamais consideree "a reviser")."""
+    cle_depart = _cle_portee_de_flashcard(flashcard_id)
+    if cle_depart is None:
+        return list(spaced_repetition), comportement_echec
+
+    reglage = _reglage_dict_effectif(cle_depart)
+    if reglage and not reglage.get("desactive"):
         return list(reglage["intervalles"]), reglage["comportement_echec"]
-    return reglages_effectifs_pour_portee(cle_depart)
+    return list(spaced_repetition), comportement_echec
+
+def _portee_desactivee(flashcard_id):
+    """True si la portee effective de cette flashcard (elle-meme ou le
+    reglage herite le plus specifique) desactive la repetition espacee -
+    la carte reste consultable en revision libre mais n'est plus jamais
+    consideree "a reviser" (voir est_a_reviser)."""
+    cle_depart = _cle_portee_de_flashcard(flashcard_id)
+    if cle_depart is None:
+        return False
+    reglage = _reglage_dict_effectif(cle_depart)
+    return bool(reglage and reglage.get("desactive"))
 
 def definir_reglages_portee(cle_portee, reglage):
     """reglage=None efface la personnalisation de cette portee (retour a
-    l'heritage). Sinon, reglage doit etre {"intervalles": [...],
-    "comportement_echec": "..."} - valide avant d'etre enregistre."""
+    l'heritage). Sinon, reglage doit etre soit {"desactive": True} (la
+    repetition espacee est completement desactivee pour cette portee - les
+    flashcards restent consultables en revision libre uniquement), soit
+    {"intervalles": [...], "comportement_echec": "..."} - valide avant d'etre
+    enregistre."""
     if reglage is None:
         if cle_portee in reglages_par_portee:
             del reglages_par_portee[cle_portee]
             sauvegarder()
+        return
+
+    if reglage.get("desactive"):
+        reglages_par_portee[cle_portee] = {"desactive": True}
+        sauvegarder()
         return
 
     intervalles = [int(v) for v in reglage["intervalles"]]
@@ -508,6 +553,13 @@ def date_prochaine_revision(flashcard_id):
     return derniere_revision + dt.timedelta(days=intervalles[indice])
 
 def est_a_reviser(flashcard_id):
+    if _portee_desactivee(flashcard_id):
+        # repetition espacee desactivee pour ce dossier/cette matiere/ce
+        # sous-dossier (voir definir_reglages_portee) : la carte ne revient
+        # jamais toute seule dans l'agenda/les revisions automatiques. Reste
+        # accessible via "revision libre" (toutes_les_flashcards=True), qui
+        # ne passe pas par cette fonction.
+        return False
     if _est_apprise(flashcard_id):
         # carte apprise (dernier palier deja reussi une fois) : elle ne
         # revient plus jamais toute seule dans l'agenda/les revisions
@@ -667,8 +719,9 @@ def calendrier_revisions():
     calendrier = {}
     for subject_name, flashcard_ids in subjects.items():
         for flashcard_id in flashcard_ids:
-            if _est_apprise(flashcard_id):
-                # apprise -> plus jamais dans l'agenda (voir est_a_reviser)
+            if _est_apprise(flashcard_id) or _portee_desactivee(flashcard_id):
+                # apprise ou portee desactivee -> plus jamais dans l'agenda
+                # (voir est_a_reviser)
                 continue
             date_rev = date_prochaine_revision(flashcard_id)
             calendrier.setdefault(date_rev, {})
@@ -689,7 +742,8 @@ def flashcards_prevues_le(date_cible):
     for subject_name, flashcard_ids in subjects.items():
         concernees = [
             flashcard_id for flashcard_id in flashcard_ids
-            if not _est_apprise(flashcard_id) and date_prochaine_revision(flashcard_id) == date_cible
+            if not _est_apprise(flashcard_id) and not _portee_desactivee(flashcard_id)
+            and date_prochaine_revision(flashcard_id) == date_cible
         ]
         if concernees:
             resultat[subject_name] = concernees

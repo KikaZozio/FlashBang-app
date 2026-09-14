@@ -30,7 +30,10 @@ class DialogueReglagesPortee(QDialog):
             f"Personnalise le système de répétition espacée pour « {titre_portee} ». "
             "S'applique à tout ce qu'elle contient, sauf si un niveau plus précis "
             "(sous-dossier, sous-sous-dossier) a lui-même un réglage personnalisé — "
-            "c'est toujours le réglage le plus précis qui l'emporte."
+            "c'est toujours le réglage le plus précis qui l'emporte. Tu peux aussi "
+            "désactiver complètement la répétition espacée ici : les flashcards "
+            "restent consultables, mais ne reviennent plus jamais automatiquement "
+            "dans les révisions du jour ni dans l'agenda."
         )
         info.setWordWrap(True)
         info.setStyleSheet(f"color: {styles.TEXT_SECONDARY}; font-size: 12px;")
@@ -38,8 +41,15 @@ class DialogueReglagesPortee(QDialog):
 
         self._case_personnaliser = QCheckBox("Utiliser des réglages personnalisés ici")
         self._case_personnaliser.setCursor(Qt.CursorShape.PointingHandCursor)
-        self._case_personnaliser.toggled.connect(self._basculer_activation)
+        self._case_personnaliser.toggled.connect(self._on_personnaliser_bascule)
         racine.addWidget(self._case_personnaliser)
+
+        self._case_desactiver = QCheckBox(
+            "Désactiver la répétition espacée ici (flashcards en révision libre uniquement)"
+        )
+        self._case_desactiver.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._case_desactiver.toggled.connect(self._on_desactiver_bascule)
+        racine.addWidget(self._case_desactiver)
 
         label_intervalles = QLabel("Intervalles de révision (en jours)")
         label_intervalles.setStyleSheet("font-weight: 600; font-size: 13px;")
@@ -66,19 +76,25 @@ class DialogueReglagesPortee(QDialog):
         # on l'affiche tel quel (case cochee). Sinon on affiche ce qu'elle
         # HERITERAIT (case decochee, champs desactives mais visibles).
         reglage_existant = lists.reglages_par_portee.get(cle_portee)
-        if reglage_existant:
+        desactive_existant = bool(reglage_existant and reglage_existant.get("desactive"))
+        if reglage_existant and not desactive_existant:
             intervalles_affiches = reglage_existant["intervalles"]
             mode_affiche = reglage_existant["comportement_echec"]
         else:
-            intervalles_affiches, mode_affiche = lists.reglages_effectifs_pour_portee(cle_portee)
+            intervalles_affiches, mode_affiche, _herite_desactive = (
+                lists.reglages_effectifs_pour_portee(cle_portee)
+            )
 
         self._champ_intervalles.setText(", ".join(str(v) for v in intervalles_affiches))
         bouton_a_cocher = self._boutons_echec.get(mode_affiche)
         if bouton_a_cocher:
             bouton_a_cocher.setChecked(True)
 
-        self._case_personnaliser.setChecked(bool(reglage_existant))
-        self._basculer_activation(self._case_personnaliser.isChecked())
+        self._case_desactiver.setChecked(desactive_existant)
+        self._case_personnaliser.setChecked(bool(reglage_existant) and not desactive_existant)
+        self._basculer_activation(
+            self._case_personnaliser.isChecked() and not self._case_desactiver.isChecked()
+        )
 
         ligne_boutons = QHBoxLayout()
         bouton_annuler = QPushButton("Annuler")
@@ -99,6 +115,20 @@ class DialogueReglagesPortee(QDialog):
         for bouton in self._boutons_echec.values():
             bouton.setEnabled(actif)
 
+    def _on_personnaliser_bascule(self, actif):
+        # "Personnaliser" et "Desactiver" s'excluent mutuellement : cocher
+        # l'un decoche automatiquement l'autre (pas de sens a activer les
+        # deux en meme temps).
+        if actif and self._case_desactiver.isChecked():
+            self._case_desactiver.setChecked(False)
+        self._basculer_activation(actif)
+
+    def _on_desactiver_bascule(self, actif):
+        if actif and self._case_personnaliser.isChecked():
+            self._case_personnaliser.setChecked(False)
+        if actif:
+            self._basculer_activation(False)
+
     def _mode_echec_choisi(self):
         for mode, bouton in self._boutons_echec.items():
             if bouton.isChecked():
@@ -106,6 +136,11 @@ class DialogueReglagesPortee(QDialog):
         return "zero"
 
     def _enregistrer(self):
+        if self._case_desactiver.isChecked():
+            lists.definir_reglages_portee(self._cle_portee, {"desactive": True})
+            self.accept()
+            return
+
         if not self._case_personnaliser.isChecked():
             lists.definir_reglages_portee(self._cle_portee, None)
             self.accept()
